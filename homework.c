@@ -11,7 +11,6 @@ typedef struct s_node
 	int				school_number_flag;
 	int				birth_day;
 	int				birth_day_flag;
-    struct s_node	*down;
     struct s_node	*next;
 }	t_node;
 
@@ -79,7 +78,7 @@ char	*ft_itoa(int n)
 
 t_node *lst_new(char *school_number, char *name, int birthday, int birth_day_flag, int school_number_flag)
 {
-    t_node *new = malloc(sizeof(t_node));
+    t_node *new = (t_node *)malloc(sizeof(t_node));
     
 	if (!new)
         return NULL;
@@ -125,7 +124,7 @@ t_node	*ft_lstcpy(t_node *lst)
 	t_node	*result;
 	t_node	*result_current;
 
-	result = lst_new(lst->school_number, lst->name, lst->birth_day, lst->birth_day_flag, lst->school_number_flag);
+	result = lst_new(lst->school_number, lst->name, lst->birth_day, -1, -1);
 	result_current = result;
 	lst = lst->next;
 	while (lst)
@@ -182,8 +181,8 @@ t_node *connect()
     FILE *dosya;
     t_node *head = NULL;
     t_node *tmp = NULL;
-	char	*name;
-	char	*school_number;
+	char	name[50];
+	char	school_number[10];
 	int		birth_day;
 
     dosya = fopen("input.txt", "r");
@@ -197,87 +196,80 @@ t_node *connect()
     // Dosyadaki satır sayısını bulma
     while (fscanf(dosya, "%*[^\n]\n") != EOF)
         satir++;
-    rewind(dosya);
-    for (int i = 0; i < satir; i++)
-	{
 
-        if (fscanf(dosya, "%s;%s;%d", school_number, name, &birth_day) == 1)
+    rewind(dosya);
+    
+	while (fscanf(dosya, "%19[^;];%49[^;];%d\n", school_number, name, &birth_day) == 3)
+	{
+        if (head == NULL)
 		{
-            if (i == 0)
-			{
-				tmp = lst_new(school_number, name, birth_day, -1, -1);
-				head = tmp;
-			}
-			else
-				tmp->next = lst_new(school_number, name, birth_day, -1,-1);
-        }
+            tmp = lst_new(strdup(school_number), strdup(name), birth_day, -1, -1);
+            head = tmp;
+        } 
 		else
 		{
-            perror("the csv file is not square or file reading error.");
-            return NULL;
+            tmp->next = lst_new(strdup(school_number), strdup(name), birth_day, -1, -1);
+            tmp = tmp->next;
         }
+
     }
 
     fclose(dosya);
     return head;
 }
-
-
-
-
-// void	output(t_node *head)
-// {
-// 	t_node *tmp = head;
-// 	int count = 0;
-// 	FILE *dosya = fopen("output.txt", "w");
-
-// 	fprintf(dosya, "Student names in ascending order by birthday:\n");
-// 	for (int i = 0; i < satir ; i++)
-// 	{
-// 		count++;
-// 		fprintf(dosya, ft_itoa(tmp->value));
-// 		tmp = tmp2;
-// 		for (int j = 0; j < count; j++)
-// 			tmp = tmp->next;
-// 		if (tmp2->down)
-// 			tmp2 = tmp2->down;
-// 		if (i < satir - 1)
-// 			fprintf(dosya, ",");
-// 	}
-// 	fprintf(dosya, "\n");
+void	output(t_node *head)
+{
+	t_node *tmp = head;
+	t_node *tmp2 = head->down;
+	int count = 0;
+	FILE *dosya = fopen("output.txt", "w");
+	for (int i = 0; i < satir ; i++)
+	{
+		count++;
+		fprintf(dosya, ft_itoa(tmp->value));
+		tmp = tmp2;
+		for (int j = 0; j < count; j++)
+			tmp = tmp->next;
+		if (tmp2->down)
+			tmp2 = tmp2->down;
+		if (i < satir - 1)
+			fprintf(dosya, ",");
+	}
+	fprintf(dosya, "\n");
 	
-// 	tmp = head;
-// 	count = 0;
-// 	int	count_for_comma = 0;
-// 	for (int i = 0; i < satir; i++)
-// 	{
-// 		tmp = head;
-// 		for (int k = 0; k < satir; k++)
-// 		{
-// 			tmp2 = tmp;
-// 			for (int k = 0; k < count; k++)
-// 				tmp2 = tmp2->next;
-// 			fprintf(dosya, ft_itoa(tmp2->value));
-// 			tmp = tmp->down;
-// 			count_for_comma++;
-// 			if (count_for_comma < satir * satir)
-// 				fprintf(dosya, ",");
+	tmp = head;
+	tmp2 = head;
+	count = 0;
+	int	count_for_comma = 0;
+	for (int i = 0; i < satir; i++)
+	{
+		tmp = head;
+		for (int k = 0; k < satir; k++)
+		{
+			tmp2 = tmp;
+			for (int k = 0; k < count; k++)
+				tmp2 = tmp2->next;
+			fprintf(dosya, ft_itoa(tmp2->value));
+			tmp = tmp->down;
+			count_for_comma++;
+			if (count_for_comma < satir * satir)
+				fprintf(dosya, ",");
 
-// 		}
-// 		count++;
-// 	}
-//     fclose(dosya);
-// }
+		}
+		count++;
+	}
+    fclose(dosya);
+}
 
 int main()
 {
     t_node *head = connect();
 	t_node *head_cpy = ft_lstcpy(head);
+
 	t_node *sorted_lst = sort(head);
 
-	flag(&head_cpy, &sorted_lst);
-
+	// flag(&head_cpy, &sorted_lst);
     if (head != NULL)
-		output(head_cpy);
+		output(sorted_lst);
     return 0;
 }
