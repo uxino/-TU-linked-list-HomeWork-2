@@ -8,9 +8,7 @@ typedef struct s_node
 {
 	char			*name;
 	char			*school_number;
-	int				school_number_flag;
 	int				birth_day;
-	int				birth_day_flag;
     struct s_node	*next;
 }	t_node;
 
@@ -76,7 +74,7 @@ char	*ft_itoa(int n)
 	return (str);
 }
 
-t_node *lst_new(char *school_number, char *name, int birthday, int birth_day_flag, int school_number_flag)
+t_node *lst_new(char *school_number, char *name, int birthday)
 {
     t_node *new = (t_node *)malloc(sizeof(t_node));
     
@@ -86,10 +84,16 @@ t_node *lst_new(char *school_number, char *name, int birthday, int birth_day_fla
 	new->name = name;
 	new->school_number = school_number;
 	new->birth_day = birthday;
-	new->birth_day_flag = birth_day_flag;
-	new->school_number_flag = school_number_flag;
     new->next = NULL;
     return new;
+}
+
+int ft_dif(const char *s, const char *p)
+{
+    int i = 0;
+    while (s[i] && p[i] && s[i] == p[i])
+        i++;
+    return s[i] - p[i];
 }
 
 t_node	*find_and_extract_largest(t_node **lst)
@@ -119,17 +123,47 @@ t_node	*find_and_extract_largest(t_node **lst)
 		*lst = largest->next;
 	return (largest);
 }
+
+t_node	*find_and_extract_largest2(t_node **lst)
+{
+	t_node	*current;
+	t_node	*prev;
+	t_node	*largest;
+	t_node	*prev_largest;
+
+	current = *lst;
+	prev = NULL;
+	largest = current;
+	prev_largest = NULL;
+	while (current != NULL)
+	{
+		if (ft_dif(current->school_number, largest->school_number) > 0)
+		{
+			largest = current;
+			prev_largest = prev;
+		}
+		prev = current;
+		current = current->next;
+	}
+	if (prev_largest != NULL)
+		prev_largest->next = largest->next;
+	else
+		*lst = largest->next;
+	return (largest);
+}
+
+
 t_node	*ft_lstcpy(t_node *lst)
 {
 	t_node	*result;
 	t_node	*result_current;
 
-	result = lst_new(lst->school_number, lst->name, lst->birth_day, -1, -1);
+	result = lst_new(lst->school_number, lst->name, lst->birth_day);
 	result_current = result;
 	lst = lst->next;
 	while (lst)
 	{
-		ft_lstadd_back(&result_current,lst_new(lst->school_number, lst->name, lst->birth_day, lst->birth_day_flag, lst->school_number_flag));
+		ft_lstadd_back(&result_current,lst_new(lst->school_number, lst->name, lst->birth_day));
 		lst = lst->next;
 	}
 	return (result);
@@ -150,30 +184,19 @@ t_node	*sort(t_node *lst)
 	return (sorted);
 }
 
-void	flag(t_node **lst, t_node **lst2)
+t_node	*sort2(t_node *lst)
 {
-	int		i;
-	t_node	*temp;
+	t_node	*sorted;
+	t_node	*largest;
 
-	i = 1;
-	temp = (*lst);
-	while ((*lst2))
+	sorted = NULL;
+	while (lst)
 	{
-		while ((*lst))
-		{
-			if ((*lst2)->birth_day == (*lst)->birth_day)
-			{
-				(*lst)->birth_day_flag = i;
-				i++;
-				break ;
-			}
-			(*lst) = (*lst)->next;
-		}
-		(*lst) = temp;
-		free(*lst2);
-		(*lst2) = (*lst2)->next;
+		largest = find_and_extract_largest2(&lst);
+		largest->next = sorted;
+		sorted = largest;
 	}
-	(*lst) = temp;
+	return (sorted);
 }
 
 t_node *connect()
@@ -196,80 +219,57 @@ t_node *connect()
     // Dosyadaki satır sayısını bulma
     while (fscanf(dosya, "%*[^\n]\n") != EOF)
         satir++;
-
     rewind(dosya);
-    
+
 	while (fscanf(dosya, "%19[^;];%49[^;];%d\n", school_number, name, &birth_day) == 3)
 	{
         if (head == NULL)
 		{
-            tmp = lst_new(strdup(school_number), strdup(name), birth_day, -1, -1);
+            tmp = lst_new(strdup(school_number), strdup(name), birth_day);
             head = tmp;
         } 
 		else
 		{
-            tmp->next = lst_new(strdup(school_number), strdup(name), birth_day, -1, -1);
+            tmp->next = lst_new(strdup(school_number), strdup(name), birth_day);
             tmp = tmp->next;
         }
-
     }
-
     fclose(dosya);
     return head;
 }
-void	output(t_node *head)
+void	output(t_node *head, t_node *head2)
 {
-	t_node *tmp = head;
-	t_node *tmp2 = head->down;
-	int count = 0;
-	FILE *dosya = fopen("output.txt", "w");
-	for (int i = 0; i < satir ; i++)
-	{
-		count++;
-		fprintf(dosya, ft_itoa(tmp->value));
-		tmp = tmp2;
-		for (int j = 0; j < count; j++)
-			tmp = tmp->next;
-		if (tmp2->down)
-			tmp2 = tmp2->down;
-		if (i < satir - 1)
-			fprintf(dosya, ",");
-	}
-	fprintf(dosya, "\n");
-	
-	tmp = head;
-	tmp2 = head;
-	count = 0;
-	int	count_for_comma = 0;
-	for (int i = 0; i < satir; i++)
-	{
-		tmp = head;
-		for (int k = 0; k < satir; k++)
-		{
-			tmp2 = tmp;
-			for (int k = 0; k < count; k++)
-				tmp2 = tmp2->next;
-			fprintf(dosya, ft_itoa(tmp2->value));
-			tmp = tmp->down;
-			count_for_comma++;
-			if (count_for_comma < satir * satir)
-				fprintf(dosya, ",");
+	t_node *tmp;
+	t_node *tmp2;
 
-		}
-		count++;
+	tmp = head;
+	tmp2 = head2;
+	FILE *dosya = fopen("output.txt", "w");
+	fprintf(dosya, "Student names in ascending order by birthday:\n");
+	while (tmp)
+	{
+		fprintf(dosya, "%s;%d\n", tmp->name, tmp->birth_day);
+		tmp = tmp->next;
 	}
-    fclose(dosya);
+	fprintf(dosya, "School numbers by the faculty codes in ascending order:\n");
+	while (tmp2)
+	{
+		fprintf(dosya, "%s\n", tmp2->school_number);
+		tmp2 = tmp2->next;
+	}
+	fclose(dosya);
 }
 
 int main()
 {
     t_node *head = connect();
 	t_node *head_cpy = ft_lstcpy(head);
+	t_node *head_cpy2 = ft_lstcpy(head);
 
-	t_node *sorted_lst = sort(head);
+	t_node *sorted_lst = sort(head_cpy); // finish
+	t_node *sorted_lst2 = sort2(head_cpy2);
 
-	// flag(&head_cpy, &sorted_lst);
     if (head != NULL)
-		output(sorted_lst);
+		output(sorted_lst, sorted_lst2);
     return 0;
 }

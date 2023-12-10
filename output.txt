@@ -1,0 +1,12 @@
+Student names in ascending order by birthday:
+Mehmet Ali Sarsıl;2000
+Esma Sultan;2001
+Muhammed Esad ŞEKER;2002
+Selami Kılıç;2002
+Ali Pehlivan;2005
+School numbers by the faculty codes in ascending order:
+040160811
+040180224
+125256325
+150190207
+820190040
